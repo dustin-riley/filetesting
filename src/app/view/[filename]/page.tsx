@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
-import { promises as fs } from 'fs';
 import path from 'path';
+import { head } from '@vercel/blob';
 import Papa from 'papaparse';
 import CSVTable from '@/components/CSVTable';
 
@@ -17,22 +17,19 @@ function getFileType(filename: string): 'pdf' | 'csv' | 'other' {
   return 'other';
 }
 
-async function fileExists(filename: string): Promise<boolean> {
-  const filesDirectory = path.join(process.cwd(), 'public/files');
-  const filePath = path.join(filesDirectory, filename);
-
+async function getBlobUrl(filename: string): Promise<string | null> {
   try {
-    await fs.access(filePath);
-    return true;
+    const blob = await head(filename);
+    return blob?.url || null;
   } catch {
-    return false;
+    return null;
   }
 }
 
-async function readCSVFile(filename: string): Promise<Record<string, string>[]> {
-  const filesDirectory = path.join(process.cwd(), 'public/files');
-  const filePath = path.join(filesDirectory, filename);
-  const fileContent = await fs.readFile(filePath, 'utf-8');
+async function readCSVFile(blobUrl: string): Promise<Record<string, string>[]> {
+  // Fetch the CSV content from the blob URL
+  const response = await fetch(blobUrl);
+  const fileContent = await response.text();
 
   return new Promise((resolve, reject) => {
     Papa.parse(fileContent, {
@@ -52,9 +49,9 @@ export default async function ViewFilePage({ params }: PageProps) {
   const { filename } = await params;
   const decodedFilename = decodeURIComponent(filename);
 
-  // Check if file exists
-  const exists = await fileExists(decodedFilename);
-  if (!exists) {
+  // Get blob URL for the file
+  const blobUrl = await getBlobUrl(decodedFilename);
+  if (!blobUrl) {
     notFound();
   }
 
@@ -62,7 +59,7 @@ export default async function ViewFilePage({ params }: PageProps) {
 
   // Handle CSV files
   if (fileType === 'csv') {
-    const csvData = await readCSVFile(decodedFilename);
+    const csvData = await readCSVFile(blobUrl);
 
     return (
       <div className="container mx-auto px-4 py-8">
@@ -75,7 +72,8 @@ export default async function ViewFilePage({ params }: PageProps) {
   }
 
   // Handle PDF files (and other files with iframe)
-  const fileUrl = `/files/${encodeURIComponent(decodedFilename)}`;
+  // Use API route to proxy PDF from our domain so relative URLs work
+  const pdfUrl = `/api/pdf/${encodeURIComponent(decodedFilename)}`;
 
   return (
     <div className="container mx-auto px-4 py-8 h-full">
@@ -85,7 +83,7 @@ export default async function ViewFilePage({ params }: PageProps) {
 
       <div className="border rounded-lg overflow-hidden" style={{ height: 'calc(100vh - 250px)' }}>
         <iframe
-          src={fileUrl}
+          src={pdfUrl}
           className="w-full h-full"
           title={decodedFilename}
         />
