@@ -1,6 +1,6 @@
-import { promises as fs } from 'fs';
 import path from 'path';
 import Link from 'next/link';
+import { list } from '@vercel/blob';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -19,27 +19,24 @@ function getFileType(filename: string): 'pdf' | 'csv' | 'other' {
 }
 
 async function getFiles(): Promise<FileInfo[]> {
-  const filesDirectory = path.join(process.cwd(), 'public/files');
-
   try {
-    const filenames = await fs.readdir(filesDirectory);
-    const files = await Promise.all(
-      filenames
-        .filter(name => !name.startsWith('.')) // Filter out hidden files like .gitkeep
-        .map(async (name) => {
-          const filePath = path.join(filesDirectory, name);
-          const stats = await fs.stat(filePath);
-          return {
-            name,
-            size: stats.size,
-            modifiedDate: stats.mtime.toLocaleDateString(),
-            type: getFileType(name),
-          };
-        })
-    );
+    const { blobs } = await list();
+
+    const files: FileInfo[] = blobs.map((blob) => {
+      // Extract filename from pathname (e.g., "sample-data.csv")
+      const name = blob.pathname;
+
+      return {
+        name,
+        size: blob.size,
+        modifiedDate: new Date(blob.uploadedAt).toLocaleDateString(),
+        type: getFileType(name),
+      };
+    });
+
     return files;
   } catch (error) {
-    console.error('Error reading files directory:', error);
+    console.error('Error listing blob files:', error);
     return [];
   }
 }
@@ -55,7 +52,7 @@ export default async function Home() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-muted-foreground text-center">
-              No files found. Add PDF or CSV files to the <code className="bg-muted px-2 py-1 rounded">public/files/</code> directory.
+              No files found. Upload PDF or CSV files to Vercel Blob Storage to get started.
             </p>
           </CardContent>
         </Card>
