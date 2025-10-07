@@ -4,6 +4,9 @@ import { list } from '@vercel/blob';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
+// Force dynamic rendering to show newly added files without redeploying
+export const dynamic = 'force-dynamic';
+
 interface FileInfo {
   name: string;
   size: number;
