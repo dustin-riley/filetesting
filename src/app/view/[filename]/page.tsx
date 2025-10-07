@@ -41,7 +41,7 @@ async function readCSVFile(filename: string): Promise<Record<string, string>[]> 
       complete: (results) => {
         resolve(results.data as Record<string, string>[]);
       },
-      error: (error) => {
+      error: (error: Error) => {
         reject(error);
       },
     });
