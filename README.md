@@ -17,7 +17,7 @@ A modern file viewer application built with Next.js that provides seamless viewi
 
 ## Tech Stack
 
-- **Framework**: [Next.js 15.5.4](https://nextjs.org) with App Router
+- **Framework**: [Next.js 16.1.0](https://nextjs.org) with App Router
 - **Runtime**: [React 19.1.0](https://react.dev)
 - **Language**: [TypeScript 5](https://www.typescriptlang.org)
 - **Build Tool**: [Turbopack](https://turbo.build/pack)
